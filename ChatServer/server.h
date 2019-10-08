@@ -20,8 +20,11 @@ class server
 private:
 	SOCKET listenSocket = INVALID_SOCKET;
 	int iResult;
+	struct addrinfo hints;
+	struct addrinfo* addrResult = NULL;
 
 public:
+	~server();
 
 	void init();
 	void start();
