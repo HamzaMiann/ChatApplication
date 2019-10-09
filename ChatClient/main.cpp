@@ -12,6 +12,27 @@
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PORT "5150"
 
+enum MessageTypes
+{
+	MESSAGE_ID_SEND,
+	MESSAGE_ID_JOIN_ROOM,
+	MESSAGE_ID_LEAVE_ROOM
+};
+void SendAMessage(std::string roomName, std::string message)
+{
+	NetworkBuffer buf(255);
+	buf.writeInt32BE(0);
+
+	buf.writeInt32BE(MESSAGE_ID_SEND);
+
+
+	buf.writeInt32BE(roomName.length());
+	buf.writeString(roomName);
+
+	buf.writeInt32BE(message.length());
+	buf.writeString(message);
+
+}
 
 int main(int argc, char** argv)
 {
