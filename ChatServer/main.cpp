@@ -8,7 +8,7 @@ int main()
 	server* s = new server;
 
 	s->init();
-	s->start();
+	s->start_listening();
 
 	delete s;
 }

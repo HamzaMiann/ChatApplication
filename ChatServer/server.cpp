@@ -2,10 +2,11 @@
 #include "server.h"
 #include <mutex>
 #include <thread>
+#include <algorithm>
 
 std::mutex mtx;
 
-void HandleAccept(SOCKET acceptSocket)
+void HandleAccept(connection* conn)
 {
 	int iResult;
 
@@ -18,36 +19,41 @@ void HandleAccept(SOCKET acceptSocket)
 	do
 	{
 		printf("Waiting to receive data from the client...\n");
-		iResult = recv(acceptSocket, recvbuf, recvbuflen, 0);
+		iResult = recv(conn->acceptSocket, recvbuf, recvbuflen, 0);
 		if (iResult > 0)
 		{
 			// We have received data successfully!
 			// iResult is the number of bytes received
 			printf("Bytes received: %d\n", iResult);
+			network_message m;
+			m.message = recvbuf;
+			m.message_length = iResult;
+			conn->Server.SendMessageToAllClients(m, conn);
 
 			// Send data to the client
-			iSendResult = send(acceptSocket, recvbuf, iResult, 0);
+			/*iSendResult = send(conn->acceptSocket, recvbuf, iResult, 0);
 			if (iSendResult == SOCKET_ERROR)
 			{
 				printf("send failed with error: %d\n", WSAGetLastError());
-				closesocket(acceptSocket);
+				closesocket(conn->acceptSocket);
 				WSACleanup();
 				exit(1);
 			}
-			printf("Bytes sent: %d\n", iSendResult);
+			printf("Bytes sent: %d\n", iSendResult);*/
 		}
 		else if (iResult < 0)
 		{
-			printf("recv failed with error: %d\n", WSAGetLastError());
-			closesocket(acceptSocket);
-			WSACleanup();
-			exit(1);
+			printf("recv failed with error: %d, closing connection\n", WSAGetLastError());
+			break;
 		}
 		else // iResult == 0
 		{
-			printf("Connection closing...\n");
+			printf("Connection %d closing...\n", (int)conn->acceptSocket);
 		}
 	} while (iResult > 0);
+	conn->Server.RemoveClient(conn);
+	closesocket(conn->acceptSocket);
+	delete conn;
 }
 
 server::~server()
@@ -134,27 +140,27 @@ void server::init()
 	// We don't need this anymore
 	freeaddrinfo(addrResult);
 
+	// #3 Listen
+	iResult = listen(listenSocket, SOMAXCONN);
+	if (iResult == SOCKET_ERROR)
+	{
+		printf("listen() failed with error %d\n", WSAGetLastError());
+		closesocket(listenSocket);
+		WSACleanup();
+		exit(1);
+	}
+	else
+	{
+		printf("listen() was successful!\n");
+	}
+
 }
 
-void server::start()
+void server::start_listening()
 {
 	while (true)
 	{
 		SOCKET acceptSocket = INVALID_SOCKET;
-
-		// #3 Listen
-		iResult = listen(listenSocket, SOMAXCONN);
-		if (iResult == SOCKET_ERROR)
-		{
-			printf("listen() failed with error %d\n", WSAGetLastError());
-			closesocket(listenSocket);
-			WSACleanup();
-			exit(1);
-		}
-		else
-		{
-			printf("listen() was successful!\n");
-		}
 
 		// #4 Accept		(Blocking call)
 		printf("Waiting for client to connect...\n");
@@ -169,12 +175,60 @@ void server::start()
 		else
 		{
 			printf("accept() is OK!\n");
-			printf("Accepted client on socket %d\n", acceptSocket);
+			printf("Accepted client on socket %d\n", acceptSocket, this);
 		}
 
-		std::thread(HandleAccept, acceptSocket);
+		connection* conn = new connection(*this, acceptSocket);
+		AddClient(conn);
+
+		new std::thread(HandleAccept, conn);
 	}
 
 	// No longer need server socket
 	closesocket(listenSocket);
+}
+
+void server::SendMessageToAllClients(network_message message, connection* conn)
+{
+	mtx.lock();
+
+	printf("Sending message from %d to all clients\n", (int)conn->acceptSocket);
+
+	for (unsigned int i = 0; i < clients.size(); ++i)
+	{
+		printf("client = %d\n", i);
+		int iSendResult = send(clients[i]->acceptSocket, message.message, message.message_length, 0);
+		if (iSendResult == SOCKET_ERROR)
+		{
+			printf("send failed with error: %d\n", WSAGetLastError());
+			closesocket(clients[i]->acceptSocket);
+			WSACleanup();
+			exit(1);
+		}
+	}
+
+
+	mtx.unlock();
+}
+
+void server::RemoveClient(connection* conn)
+{
+	mtx.lock();
+
+	std::vector<connection*>::iterator it = std::find(clients.begin(), clients.end(), conn);
+	if (it != clients.end())
+	{
+		clients.erase(it);
+	}
+
+	mtx.unlock();
+}
+
+void server::AddClient(connection* conn)
+{
+	mtx.lock();
+
+	this->clients.push_back(conn);
+
+	mtx.unlock();
 }
