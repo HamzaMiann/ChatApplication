@@ -14,8 +14,6 @@ void HandleAccept(connection* conn)
 	char recvbuf[DEFAULT_BUFLEN];
 	int recvbuflen = DEFAULT_BUFLEN;
 
-	int iSendResult;
-
 	do
 	{
 		printf("Waiting to receive data from the client...\n");
@@ -25,10 +23,13 @@ void HandleAccept(connection* conn)
 			// We have received data successfully!
 			// iResult is the number of bytes received
 			printf("Bytes received: %d\n", iResult);
-			network_message m;
-			m.message = recvbuf;
-			m.message_length = iResult;
-			conn->Server.SendMessageToAllClients(m, conn);
+
+			conn->Server.ProcessMessage(recvbuf, recvbuflen, conn);
+
+			//m.message = recvbuf;
+			//m.message_length = iResult;
+
+			//conn->Server.SendMessageToAllClients(m, conn);
 
 			// Send data to the client
 			/*iSendResult = send(conn->acceptSocket, recvbuf, iResult, 0);
@@ -188,7 +189,7 @@ void server::start_listening()
 	closesocket(listenSocket);
 }
 
-void server::SendMessageToAllClients(network_message message, connection* conn)
+void server::SendMessageToClients(network_message message, connection* conn)
 {
 	mtx.lock();
 
@@ -197,7 +198,7 @@ void server::SendMessageToAllClients(network_message message, connection* conn)
 	for (unsigned int i = 0; i < clients.size(); ++i)
 	{
 		printf("client = %d\n", i);
-		int iSendResult = send(clients[i]->acceptSocket, message.message, message.message_length, 0);
+		int iSendResult = send(clients[i]->acceptSocket, message.message.c_str(), message.message_length, 0);
 		if (iSendResult == SOCKET_ERROR)
 		{
 			printf("send failed with error: %d\n", WSAGetLastError());
@@ -209,6 +210,76 @@ void server::SendMessageToAllClients(network_message message, connection* conn)
 
 
 	mtx.unlock();
+}
+
+void server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* conn)
+{
+	network_message m;
+	NetworkBuffer buf(recvbuflen);
+
+	// write header to the buffer
+	unsigned int n = 0;
+	for (; n < 8; ++n)
+	{
+		buf.writeString(std::to_string(recvbuf[n]));
+	}
+
+	m.packet_length = buf.readInt32LE();
+	m.message_id = (MessageTypes)(buf.readInt32LE());
+
+	unsigned int i = n;
+	for (; i < n + 4; ++i)
+	{
+		buf.writeString(std::to_string(recvbuf[i]));
+	}
+
+	m.message_length = buf.readInt32LE();
+
+	for (unsigned int j = i; j < i + m.message_length; ++j)
+	{
+		buf.writeString(std::to_string(recvbuf[j]));
+	}
+
+	m.message = buf.readString(m.message_length);
+
+	switch (m.message_id)
+	{
+	case MessageTypes::MESSAGE_ID_JOIN_ROOM:
+	{
+		mtx.lock();
+
+		rooms[m.message].push_back(conn);
+
+		mtx.unlock();
+
+		break;
+	}
+	case MessageTypes::MESSAGE_ID_LEAVE_ROOM:
+	{
+		mtx.lock();
+
+		std::vector<connection*>::iterator it =
+			std::find(rooms[m.message].begin(),
+					  rooms[m.message].end(),
+					  conn
+			);
+		if (it != rooms[m.message].end())
+			rooms[m.message].erase(it);
+
+		mtx.unlock();
+
+		break;
+	}
+	case MessageTypes::MESSAGE_ID_SEND:
+	{
+		SendMessageToClients(m, conn);
+
+		break;
+	}
+	default:
+		break;
+	}
+
 }
 
 void server::RemoveClient(connection* conn)

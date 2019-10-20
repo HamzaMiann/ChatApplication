@@ -3,7 +3,7 @@
 #include <string>
 
 /*
-@author		Hamza Mian
+@author		Hamza Mian, Brandon Becker
 @descr		Buffer class to convert endianness of data to big endian
 */
 class NetworkBuffer
@@ -39,4 +39,25 @@ public:
 	void writeString(std::string value);
 	std::string readString(size_t index, size_t length);
 	std::string readString(size_t length);
+
+	//**************************************
+	//Big Endian
+
+	// UInt
+	void writeUInt32BE(size_t index, uint32_t value);
+	void writeUInt32BE(uint32_t value);
+	uint32_t readUInt32BE(size_t index);
+	uint32_t readUInt32BE();
+
+	// Int
+	void writeInt32BE(size_t index, int32_t value) { this->writeUInt32BE(index, value); }
+	void writeInt32BE(int32_t value) { this->writeUInt32BE(value); }
+	int32_t readInt32BE(size_t index) { return this->readUInt32BE(index); }
+	int32_t readInt32BE() { return this->readUInt32BE(); }
+
+	// String
+	void writeStringBE(size_t index, std::string value);
+	void writeStringBE(std::string value);
+	std::string readStringBE(size_t index, size_t length);
+	std::string readStringBE(size_t length);
 };

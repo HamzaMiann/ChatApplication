@@ -2,8 +2,10 @@
 
 #include "server.h"
 
-
-int main()
+/*
+	Main (Program Entry Point)
+*/
+int main(int argc, char** argv)
 {
 	server* s = new server;
 
