@@ -43,6 +43,6 @@ public:
 
 	void init();
 	void listen();
-	void send_message(std::string roomName, std::string message);
+	void send_message(std::string roomName, std::string username, std::string message);
 	void display_to_screen();
 };

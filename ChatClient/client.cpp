@@ -139,7 +139,7 @@ void client::listen()
 	listen_thread = new std::thread(ListenToServer, this);
 }
 
-void client::send_message(std::string roomName, std::string message)
+void client::send_message(std::string roomName, std::string username, std::string message)
 {
 
 
@@ -157,8 +157,10 @@ void client::send_message(std::string roomName, std::string message)
 	//buf.writeInt32BE(roomName.length());
 	//buf.writeString(roomName);
 
-	buf.writeInt32BE(message.length());
-	buf.writeStringBE(message);
+	std::string to_send = username + ": " + message;
+
+	buf.writeInt32BE(to_send.length());
+	buf.writeStringBE(to_send);
 
 	// #3 write & read
 	const char* buffer = "Hello server!";

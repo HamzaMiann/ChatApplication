@@ -41,7 +41,7 @@ int main(int argc, char** argv)
 			}
 			else if (ch == RETURN)
 			{
-				c->send_message(room, c->written_message);
+				c->send_message(room, name, c->written_message);
 				c->written_message = "";
 			}
 			else
