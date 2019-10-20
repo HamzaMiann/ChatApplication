@@ -24,7 +24,13 @@ void HandleAccept(connection* conn)
 			// iResult is the number of bytes received
 			printf("Bytes received: %d\n", iResult);
 
-			conn->Server.ProcessMessage(recvbuf, recvbuflen, conn);
+			//conn->Server.ProcessMessage(recvbuf, recvbuflen, conn);
+			network_message nm;
+			NetworkBuffer buf(DEFAULT_BUFLEN, recvbuf);
+			nm.message_length = buf.readInt32LE();
+			nm.message = buf.readStringBE(nm.message_length);
+
+			conn->Server.SendMessageToClients(nm, conn);
 
 			//m.message = recvbuf;
 			//m.message_length = iResult;
@@ -195,10 +201,15 @@ void server::SendMessageToClients(network_message message, connection* conn)
 
 	printf("Sending message from %d to all clients\n", (int)conn->acceptSocket);
 
+	NetworkBuffer buf(DEFAULT_BUFLEN);
+	buf.writeInt32BE(message.message_length);
+	buf.writeStringBE(message.message);
+
 	for (unsigned int i = 0; i < clients.size(); ++i)
 	{
 		printf("client = %d\n", i);
-		int iSendResult = send(clients[i]->acceptSocket, message.message.c_str(), message.message_length, 0);
+		int iSendResult = send(clients[i]->acceptSocket, buf.Data(), DEFAULT_BUFLEN, 0);
+		//int iSendResult = send(clients[i]->acceptSocket, message.message.c_str(), message.message_length, 0);
 		if (iSendResult == SOCKET_ERROR)
 		{
 			printf("send failed with error: %d\n", WSAGetLastError());

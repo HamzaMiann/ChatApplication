@@ -17,6 +17,7 @@ public:
 
 	// Constructor
 	NetworkBuffer(size_t size);
+	NetworkBuffer(size_t size, char* data);
 
 	// Misc Methods
 	void Clear();

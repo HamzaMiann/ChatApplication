@@ -1,5 +1,9 @@
 #include "client.h"
 #include "console.h"
+#include <mutex>
+
+std::mutex mtx;
+
 
 void ListenToServer(client* client)
 {
@@ -14,11 +18,21 @@ void ListenToServer(client* client)
 
 	do
 	{
-		printf("Waiting to receive data from the server...\n");
+		//printf("Waiting to receive data from the server...\n");
 		iResult = recv(client->connectSocket, recvbuf, recvbuflen, 0);
 		if (iResult > 0)
 		{
 			printf("Bytes received: %d\n", iResult);
+			NetworkBuffer buf(DEFAULT_BUFLEN, recvbuf);
+			int message_length = buf.readInt32LE();
+			std::string message = buf.readStringBE(message_length);
+			client->message_history.push_back(message);
+
+			if (client->message_history.size() > 8u)
+			{
+				client->message_history.erase(client->message_history.begin());
+			}
+			client->display_to_screen();
 		}
 		else if (iResult == 0)
 		{
@@ -27,9 +41,9 @@ void ListenToServer(client* client)
 		else
 		{
 			printf("recv failed with error: %d\n", WSAGetLastError());
-			closesocket(client->connectSocket);
-			WSACleanup();
-			exit(1);
+			//closesocket(client->connectSocket);
+			//WSACleanup();
+			//exit(1);
 		}
 	}
 	while (iResult > 0);
@@ -134,37 +148,39 @@ void client::send_message(std::string roomName, std::string message)
 	//--------------------
 
 
-	NetworkBuffer buf(255);
-	buf.writeInt32BE(0);
+	NetworkBuffer buf(DEFAULT_BUFLEN);
+	//buf.writeInt32BE(0);
 
-	buf.writeInt32BE(MESSAGE_ID_SEND);
+	//buf.writeInt32BE(MESSAGE_ID_SEND);
 
 
-	buf.writeInt32BE(roomName.length());
-	buf.writeString(roomName);
+	//buf.writeInt32BE(roomName.length());
+	//buf.writeString(roomName);
 
 	buf.writeInt32BE(message.length());
-	buf.writeString(message);
+	buf.writeStringBE(message);
 
 	// #3 write & read
 	const char* buffer = "Hello server!";
 
-	printf("Sending a packet to the server...\n");
-	iResult = send(connectSocket, buffer, (int)strlen(buffer), 0);
+	//printf("Sending a packet to the server...\n");
+	iResult = send(connectSocket, buf.Data(), DEFAULT_BUFLEN, 0);
+	//iResult = send(connectSocket, buffer, (int)strlen(buffer), 0);
 	if (iResult == SOCKET_ERROR)
 	{
-		printf("send() failed with error: %d\n", WSAGetLastError());
+		//printf("send() failed with error: %d\n", WSAGetLastError());
 		closesocket(connectSocket);
 		WSACleanup();
 		exit(1);
 	}
-	printf("Bytes sent: %d\n", iResult);
+	//printf("Bytes sent: %d\n", iResult);
 
 }
 
 void client::display_to_screen()
 {
 	//clear_screen();
+	mtx.lock();
 	system("cls");
 	for (unsigned int i = 0; i < 8; ++i)
 	{
@@ -178,4 +194,5 @@ void client::display_to_screen()
 		}
 	}
 	printf("%s", written_message.c_str());
+	mtx.unlock();
 }

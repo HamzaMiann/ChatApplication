@@ -32,10 +32,10 @@ private:
 	WSADATA wsaData;
 	int iResult;
 	std::thread* listen_thread;
-	std::vector<std::string> message_history;
 
 public:
 	SOCKET connectSocket = INVALID_SOCKET;
+	std::vector<std::string> message_history;
 	std::string written_message = "";
 
 	client() {}

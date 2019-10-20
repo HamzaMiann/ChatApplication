@@ -1,5 +1,6 @@
 
 #include "NetworkBuffer.hpp"
+#include <algorithm>
 
 NetworkBuffer::NetworkBuffer(std::size_t size)
 {
@@ -7,6 +8,14 @@ NetworkBuffer::NetworkBuffer(std::size_t size)
 		_buffer.push_back(0u);
 	readIndex = 0;
 	writeIndex = 0;
+}
+
+NetworkBuffer::NetworkBuffer(std::size_t size, char* data)
+{
+	for (std::size_t i = 0; i < size; ++i)
+		_buffer.push_back(data[i]);
+	readIndex = 0;
+	writeIndex = size;
 }
 
 void NetworkBuffer::Clear()
@@ -147,6 +156,7 @@ void NetworkBuffer::writeUInt32BE(uint32_t value)
 
 void NetworkBuffer::writeStringBE(std::size_t index, std::string value)
 {
+	std::reverse(value.begin(), value.end());
 	for (std::size_t i = 0; i < value.length(); ++i)
 	{
 		_buffer[index++] = value[i];
@@ -155,6 +165,7 @@ void NetworkBuffer::writeStringBE(std::size_t index, std::string value)
 
 void NetworkBuffer::writeStringBE(std::string value)
 {
+	std::reverse(value.begin(), value.end());
 	for (std::size_t i = 0; i < value.length(); ++i)
 	{
 		_buffer[writeIndex++] = value[i];

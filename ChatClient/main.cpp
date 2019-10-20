@@ -19,9 +19,9 @@ int main(int argc, char** argv)
 
 	client* c = new client();
 
-	//c->init();
+	c->init();
 
-	//c->listen();
+	c->listen();
 
 	std::string message;
 	bool quit = false;
@@ -41,6 +41,7 @@ int main(int argc, char** argv)
 			}
 			else if (ch == RETURN)
 			{
+				c->send_message(room, c->written_message);
 				c->written_message = "";
 			}
 			else
