@@ -157,7 +157,9 @@ void client::send_message(std::string message, MessageTypes type)
 
 	//buf.writeInt32BE(roomName.length());
 	//buf.writeString(roomName);
-	if (type == MessageTypes::MESSAGE_ID_SEND)
+	buf.writeInt32BE(message.length());
+	buf.writeStringBE(message);
+	/*if (type == MessageTypes::MESSAGE_ID_SEND)
 	{
 		buf.writeInt32BE(message.length());
 		buf.writeStringBE(message);
@@ -171,7 +173,7 @@ void client::send_message(std::string message, MessageTypes type)
 	{
 		buf.writeInt32BE(message.length());
 		buf.writeStringBE(message);
-	}
+	}*/
 
 	// #3 write & read
 	const char* buffer = "Hello server!";
@@ -197,6 +199,8 @@ void client::display_to_screen()
 	{
 		mtx.lock();
 		system("cls");
+		printf("Use /join [RoomName] to join a room]\n");
+		printf("Use /leave [RoomName] to leave a room\n");
 		for (unsigned int i = 0; i < 8; ++i)
 		{
 			if (i < message_history.size())

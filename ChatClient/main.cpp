@@ -21,8 +21,8 @@ int main(int argc, char** argv)
 	std::string room, name;
 	std::cout << "Please enter your name: ";
 	std::cin >> name;
-	std::cout << "Please enter the room you would like to join: ";
-	std::cin >> room;
+	//std::cout << "Please enter the room you would like to join: ";
+	//std::cin >> room;
 
 	client* c = new client();
 
@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 
 	c->listen();
 	c->send_message(name, MESSAGE_ID_NAME);
-	c->send_message(room, MESSAGE_ID_JOIN_ROOM);
+	//c->send_message(room, MESSAGE_ID_JOIN_ROOM);
 	c->inRoom = true;
 	std::string message;
 	bool quit = false;
@@ -50,17 +50,34 @@ int main(int argc, char** argv)
 			}
 			else if (ch == RETURN)
 			{
-				if (c->written_message == "/leave")
+				bool usedSpecialChar = false;
+				/*if (c->written_message == "/leave ")
+					{
+
+						c->inRoom = false;
+						c->written_message = "";
+						c->send_message("", MESSAGE_ID_LEAVE_ROOM);
+						room = getNewRoom();
+						c->inRoom = true;
+						c->send_message(room, MESSAGE_ID_JOIN_ROOM);
+					}*/
+				if (c->written_message.size() >= 7)
 				{
-					
-					c->inRoom = false;
-					c->written_message = "";
-					c->send_message("", MESSAGE_ID_LEAVE_ROOM);
-					room = getNewRoom();
-					c->inRoom = true;
-					c->send_message(room, MESSAGE_ID_JOIN_ROOM);
+					if (c->written_message.substr(0, 7) == "/leave ")
+					{
+						usedSpecialChar = true;
+						c->send_message(c->written_message.substr(7), MESSAGE_ID_LEAVE_ROOM);
+					}
 				}
-				else
+				if (c->written_message.size() >= 6)
+				{
+					if (c->written_message.substr(0, 6) == "/join ")
+					{
+						usedSpecialChar = true;
+						c->send_message(c->written_message.substr(6), MESSAGE_ID_JOIN_ROOM);
+					}
+				}
+				if (usedSpecialChar == false)
 				{
 					c->send_message(c->written_message, MESSAGE_ID_SEND);
 				}

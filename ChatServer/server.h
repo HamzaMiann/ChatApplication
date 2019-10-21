@@ -68,7 +68,8 @@ class connection
 public:
 	server& Server;
 	std::string client_name;
-	std::string room;
+	//std::string room;
+	std::vector<std::string> rooms;
 	SOCKET acceptSocket;
 	connection(server& _server, SOCKET socket) : Server(_server), acceptSocket(socket) {}
 	inline bool isConnected() { return acceptSocket != INVALID_SOCKET; }

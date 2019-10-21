@@ -48,6 +48,20 @@ void HandleAccept(connection* conn)
 	delete conn;
 }
 
+bool containsRoom(connection* c, std::string room)
+{
+	bool connected = false;
+	for (std::string r : c->rooms)
+	{
+		if (r == room)
+		{
+			connected = true;
+			break;
+		}
+	}
+	return connected;
+}
+
 server::~server()
 {
 	WSACleanup();
@@ -219,8 +233,12 @@ void server::SendMessageToRoom(std::string room, std::string message, connection
 
 	for (unsigned int i = 0; i < clients.size(); ++i)
 	{
-		if (clients[i]->room != room) continue;
-
+		//if (clients[i]->room != room) continue;
+		if (containsRoom(clients[i], room.c_str()) == false)
+		{
+			continue;
+		}
+		//if (clients[i]->rooms.data()->find)
 
 		int iSendResult = send(clients[i]->acceptSocket, buf.Data(), DEFAULT_BUFLEN, 0);
 		//int iSendResult = send(clients[i]->acceptSocket, message.message.c_str(), message.message_length, 0);
@@ -255,29 +273,50 @@ void server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* 
 		m.room_length = buf.readInt32LE();
 		m.room = buf.readString(m.room_length);
 
-		conn->room = m.room;
-
 		mtx.unlock();
+		//conn->room = m.room;
+		if (!containsRoom(conn, m.room.c_str()))
+		{
+			conn->rooms.push_back(m.room.c_str());
 
-		// notify all clients that the client has left the room
-		SendMessageToClients(conn->client_name + " has joined '" + conn->room + "'", conn);
 
+			// notify all clients that the client has left the room
+			SendMessageToClients(conn->client_name + " has joined '" + m.room + "'", conn);
+			printf("%s has joined %s\n", conn->client_name.c_str(), m.room.c_str());
+		}
 		break;
 	}
 	case MessageTypes::MESSAGE_ID_LEAVE_ROOM:
 	{
 		// store room variable
-		std::string room = conn->room;
+		//std::string room = conn->room;
 
 		mtx.lock();
 
-		conn->room = "";
+		m.room_length = buf.readInt32LE();
+		m.room = buf.readString(m.room_length);
+
+		bool leftRoom = false;
+		for (std::vector<std::string>::iterator index = conn->rooms.begin(); index != conn->rooms.end(); index++)
+		{
+			if (*index == m.room)
+			{
+				conn->rooms.erase(index);
+				leftRoom = true;
+				break;
+			}
+		}
+
+		//conn->room = "";
 
 		mtx.unlock();
 
 		// notify all clients that the client has left the room
-		SendMessageToClients(conn->client_name + " has left '" + room + "'", conn);
-
+		if (leftRoom == true)
+		{
+			SendMessageToClients(conn->client_name + " has left '" + m.room + "'", conn);
+			printf("%s has left %s\n", conn->client_name.c_str(), m.room.c_str());
+		}
 		break;
 	}
 	case MessageTypes::MESSAGE_ID_SEND:
@@ -285,15 +324,18 @@ void server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* 
 		m.message_length = buf.readInt32LE();
 		m.message = buf.readString(m.message_length);
 
-		SendMessageToRoom(conn->room, conn->client_name + ": " + m.message, conn);
-
+		for (std::string s : conn->rooms)
+		{
+			SendMessageToRoom(s.c_str(),  "["+ s + "] " + conn->client_name + ": " + m.message, conn);
+			printf("%s sent %s to %s\n", conn->client_name.c_str(), m.message.c_str(), s.c_str());
+		}
 		break;
 	}
 	case MessageTypes::MESSAGE_ID_NAME:
 	{
 		m.name_length = buf.readInt32LE();
 		m.client_name = buf.readString(m.name_length);
-		printf("Client name: %s \n", m.client_name);
+		//printf("Client name: %s \n", m.client_name);
 
 		mtx.lock();
 
