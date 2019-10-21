@@ -44,6 +44,13 @@ int main(int argc, char** argv)
 				c->send_message(room, name, c->written_message);
 				c->written_message = "";
 			}
+			else if (ch == '\b')
+			{
+				if (c->written_message.size() > 0)
+				{
+					c->written_message.pop_back();
+				}
+			}
 			else
 			{
 				c->written_message.push_back(ch);
