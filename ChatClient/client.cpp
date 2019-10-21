@@ -139,7 +139,7 @@ void client::listen()
 	listen_thread = new std::thread(ListenToServer, this);
 }
 
-void client::send_message(std::string roomName, std::string username, std::string message)
+void client::send_message(std::string message, MessageTypes type)
 {
 
 
@@ -149,18 +149,29 @@ void client::send_message(std::string roomName, std::string username, std::strin
 
 
 	NetworkBuffer buf(DEFAULT_BUFLEN);
-	//buf.writeInt32BE(0);
+	buf.writeInt32BE(0);
 
-	//buf.writeInt32BE(MESSAGE_ID_SEND);
+	//if ()
+	buf.writeInt32BE(type);
 
 
 	//buf.writeInt32BE(roomName.length());
 	//buf.writeString(roomName);
-
-	std::string to_send = username + ": " + message;
-
-	buf.writeInt32BE(to_send.length());
-	buf.writeStringBE(to_send);
+	if (type == MessageTypes::MESSAGE_ID_SEND)
+	{
+		buf.writeInt32BE(message.length());
+		buf.writeStringBE(message);
+	}
+	else if (type == MessageTypes::MESSAGE_ID_NAME)
+	{
+		buf.writeInt32BE(message.length());
+		buf.writeStringBE(message);
+	}
+	else if (type == MessageTypes::MESSAGE_ID_JOIN_ROOM)
+	{
+		buf.writeInt32BE(message.length());
+		buf.writeStringBE(message);
+	}
 
 	// #3 write & read
 	const char* buffer = "Hello server!";
@@ -182,19 +193,22 @@ void client::send_message(std::string roomName, std::string username, std::strin
 void client::display_to_screen()
 {
 	//clear_screen();
-	mtx.lock();
-	system("cls");
-	for (unsigned int i = 0; i < 8; ++i)
+	if (inRoom == true)
 	{
-		if (i < message_history.size())
+		mtx.lock();
+		system("cls");
+		for (unsigned int i = 0; i < 8; ++i)
 		{
-			printf("%s\n", message_history[i].c_str());
+			if (i < message_history.size())
+			{
+				printf("%s\n", message_history[i].c_str());
+			}
+			else
+			{
+				printf("\n");
+			}
 		}
-		else
-		{
-			printf("\n");
-		}
+		printf("%s", written_message.c_str());
+		mtx.unlock();
 	}
-	printf("%s", written_message.c_str());
-	mtx.unlock();
 }

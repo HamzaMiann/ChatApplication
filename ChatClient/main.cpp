@@ -7,7 +7,14 @@
 #define ESCAPE 27
 #define RETURN 13
 
-
+std::string getNewRoom()
+{
+	std::string result;
+	system("cls");
+	std::cout << "Please enter the room you would like to join: ";
+	std::cin >> result;
+	return result;
+}
 
 int main(int argc, char** argv)
 {
@@ -22,7 +29,9 @@ int main(int argc, char** argv)
 	c->init();
 
 	c->listen();
-
+	c->send_message(name, MESSAGE_ID_NAME);
+	c->send_message(room, MESSAGE_ID_JOIN_ROOM);
+	c->inRoom = true;
 	std::string message;
 	bool quit = false;
 	while (!quit)
@@ -41,7 +50,20 @@ int main(int argc, char** argv)
 			}
 			else if (ch == RETURN)
 			{
-				c->send_message(room, name, c->written_message);
+				if (c->written_message == "/leave")
+				{
+					
+					c->inRoom = false;
+					c->written_message = "";
+					c->send_message("", MESSAGE_ID_LEAVE_ROOM);
+					room = getNewRoom();
+					c->inRoom = true;
+					c->send_message(room, MESSAGE_ID_JOIN_ROOM);
+				}
+				else
+				{
+					c->send_message(c->written_message, MESSAGE_ID_SEND);
+				}
 				c->written_message = "";
 			}
 			else if (ch == '\b')
@@ -56,8 +78,10 @@ int main(int argc, char** argv)
 				c->written_message.push_back(ch);
 			}
 
-
-			c->display_to_screen();
+			if (c->inRoom == true)
+			{
+				c->display_to_screen();
+			}
 
 			
 		}

@@ -293,6 +293,7 @@ void server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* 
 	{
 		m.name_length = buf.readInt32LE();
 		m.client_name = buf.readString(m.name_length);
+		printf("Client name: %s \n", m.client_name);
 
 		mtx.lock();
 
