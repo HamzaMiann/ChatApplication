@@ -64,6 +64,24 @@ void NetworkBuffer::writeUInt32LE(uint32_t value)
 	_buffer[writeIndex++] = D;
 }
 
+void NetworkBuffer::writeInt16LE(std::size_t index, int16_t value)
+{
+	char C = value >> 8;
+	char D = value >> 0;
+
+	_buffer[index + 0] = C;
+	_buffer[index + 1] = D;
+}
+
+void NetworkBuffer::writeInt16LE(int16_t value)
+{
+	char C = value >> 8;
+	char D = value >> 0;
+
+	_buffer[writeIndex++] = C;
+	_buffer[writeIndex++] = D;
+}
+
 void NetworkBuffer::writeString(std::size_t index, std::string value)
 {
 	for (std::size_t i = 0; i < value.length(); ++i)
@@ -100,6 +118,26 @@ std::uint32_t NetworkBuffer::readUInt32LE()
 	swapped |= _buffer[readIndex++] << 8;
 	swapped |= _buffer[readIndex++] << 16;
 	swapped |= _buffer[readIndex++] << 24;
+
+	return swapped;
+}
+
+int16_t NetworkBuffer::readInt16LE(std::size_t index)
+{
+	int16_t swapped = 0;
+
+	swapped |= _buffer[index + 1] << 8;
+	swapped |= _buffer[index + 0] << 0;
+
+	return swapped;
+}
+
+int16_t NetworkBuffer::readInt16LE()
+{
+	int16_t swapped = 0;
+
+	swapped |= _buffer[readIndex++] << 0;
+	swapped |= _buffer[readIndex++] << 8;
 
 	return swapped;
 }

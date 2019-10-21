@@ -29,11 +29,17 @@ public:
 	uint32_t readUInt32LE(size_t index);
 	uint32_t readUInt32LE();
 
-	// Int
+	// Int32 ( int )
 	void writeInt32LE(size_t index, int32_t value) { this->writeUInt32LE(index, value); }
 	void writeInt32LE(int32_t value) { this->writeUInt32LE(value); }
 	int32_t readInt32LE(size_t index) { return this->readUInt32LE(index); }
 	int32_t readInt32LE() { return this->readUInt32LE(); }
+
+	// Int16 ( short )
+	void writeInt16LE(size_t index, int16_t value);
+	void writeInt16LE(int16_t value);
+	int16_t readInt16LE(size_t index);
+	int16_t readInt16LE();
 
 	// String
 	void writeString(size_t index, std::string value);
