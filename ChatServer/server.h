@@ -22,7 +22,8 @@ enum MessageTypes
 {
 	MESSAGE_ID_SEND,
 	MESSAGE_ID_JOIN_ROOM,
-	MESSAGE_ID_LEAVE_ROOM
+	MESSAGE_ID_LEAVE_ROOM,
+	MESSAGE_ID_NAME
 };
 
 struct network_message
@@ -48,7 +49,6 @@ private:
 	struct addrinfo* addrResult = NULL;
 
 	std::vector<connection*> clients;
-	std::map<std::string, std::vector<connection*>> rooms;
 
 public:
 	~server();
@@ -56,7 +56,8 @@ public:
 	void init();
 	void start_listening();
 
-	void SendMessageToClients(network_message message, connection* conn);
+	void SendMessageToClients(std::string message, connection* conn);
+	void SendMessageToRoom(std::string room, std::string message, connection* conn);
 	void ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* conn);
 	void RemoveClient(connection* conn);
 	void AddClient(connection* conn);
@@ -66,6 +67,8 @@ class connection
 {
 public:
 	server& Server;
+	std::string client_name;
+	std::string room;
 	SOCKET acceptSocket;
 	connection(server& _server, SOCKET socket) : Server(_server), acceptSocket(socket) {}
 	inline bool isConnected() { return acceptSocket != INVALID_SOCKET; }

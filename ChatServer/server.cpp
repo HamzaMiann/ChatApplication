@@ -24,29 +24,14 @@ void HandleAccept(connection* conn)
 			// iResult is the number of bytes received
 			printf("Bytes received: %d\n", iResult);
 
-			//conn->Server.ProcessMessage(recvbuf, recvbuflen, conn);
-			network_message nm;
+			conn->Server.ProcessMessage(recvbuf, recvbuflen, conn);
+			/*network_message nm;
 			NetworkBuffer buf(DEFAULT_BUFLEN, recvbuf);
 			nm.message_length = buf.readInt32LE();
 			nm.message = buf.readStringBE(nm.message_length);
 
-			conn->Server.SendMessageToClients(nm, conn);
+			conn->Server.SendMessageToClients(nm.message, conn);*/
 
-			//m.message = recvbuf;
-			//m.message_length = iResult;
-
-			//conn->Server.SendMessageToAllClients(m, conn);
-
-			// Send data to the client
-			/*iSendResult = send(conn->acceptSocket, recvbuf, iResult, 0);
-			if (iSendResult == SOCKET_ERROR)
-			{
-				printf("send failed with error: %d\n", WSAGetLastError());
-				closesocket(conn->acceptSocket);
-				WSACleanup();
-				exit(1);
-			}
-			printf("Bytes sent: %d\n", iSendResult);*/
 		}
 		else if (iResult < 0)
 		{
@@ -195,19 +180,19 @@ void server::start_listening()
 	closesocket(listenSocket);
 }
 
-void server::SendMessageToClients(network_message message, connection* conn)
+void server::SendMessageToClients(std::string message, connection* conn)
 {
 	mtx.lock();
 
 	printf("Sending message from %d to all clients\n", (int)conn->acceptSocket);
 
 	NetworkBuffer buf(DEFAULT_BUFLEN);
-	buf.writeInt32BE(message.message_length);
-	buf.writeStringBE(message.message);
+	buf.writeInt32BE(message.length());
+	buf.writeStringBE(message);
 
 	for (unsigned int i = 0; i < clients.size(); ++i)
 	{
-		printf("client = %d\n", i);
+
 		int iSendResult = send(clients[i]->acceptSocket, buf.Data(), DEFAULT_BUFLEN, 0);
 		//int iSendResult = send(clients[i]->acceptSocket, message.message.c_str(), message.message_length, 0);
 		if (iSendResult == SOCKET_ERROR)
@@ -219,6 +204,34 @@ void server::SendMessageToClients(network_message message, connection* conn)
 		}
 	}
 
+	mtx.unlock();
+}
+
+void server::SendMessageToRoom(std::string room, std::string message, connection* conn)
+{
+	mtx.lock();
+
+	printf("Sending message from %d to room %s\n", (int)conn->acceptSocket, room.c_str());
+
+	NetworkBuffer buf(DEFAULT_BUFLEN);
+	buf.writeInt32BE(message.length());
+	buf.writeStringBE(message);
+
+	for (unsigned int i = 0; i < clients.size(); ++i)
+	{
+		if (clients[i]->room != room) continue;
+
+
+		int iSendResult = send(clients[i]->acceptSocket, buf.Data(), DEFAULT_BUFLEN, 0);
+		//int iSendResult = send(clients[i]->acceptSocket, message.message.c_str(), message.message_length, 0);
+		if (iSendResult == SOCKET_ERROR)
+		{
+			printf("send failed with error: %d\n", WSAGetLastError());
+			closesocket(clients[i]->acceptSocket);
+			WSACleanup();
+			exit(1);
+		}
+	}
 
 	mtx.unlock();
 }
@@ -226,32 +239,12 @@ void server::SendMessageToClients(network_message message, connection* conn)
 void server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* conn)
 {
 	network_message m;
-	NetworkBuffer buf(recvbuflen);
+	NetworkBuffer buf(recvbuflen, recvbuf);
 
-	// write header to the buffer
-	unsigned int n = 0;
-	for (; n < 8; ++n)
-	{
-		buf.writeString(std::to_string(recvbuf[n]));
-	}
-
+	// header
 	m.packet_length = buf.readInt32LE();
-	m.message_id = (MessageTypes)(buf.readInt32LE());
+	m.message_id = (MessageTypes)buf.readInt32LE();
 
-	unsigned int i = n;
-	for (; i < n + 4; ++i)
-	{
-		buf.writeString(std::to_string(recvbuf[i]));
-	}
-
-	m.message_length = buf.readInt32LE();
-
-	for (unsigned int j = i; j < i + m.message_length; ++j)
-	{
-		buf.writeString(std::to_string(recvbuf[j]));
-	}
-
-	m.message = buf.readString(m.message_length);
 
 	switch (m.message_id)
 	{
@@ -259,33 +252,53 @@ void server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* 
 	{
 		mtx.lock();
 
-		rooms[m.message].push_back(conn);
+		m.room_length = buf.readInt32LE();
+		m.room = buf.readString(m.room_length);
+
+		conn->room = m.room;
 
 		mtx.unlock();
+
+		// notify all clients that the client has left the room
+		SendMessageToClients(conn->client_name + " has joined '" + conn->room + "'", conn);
 
 		break;
 	}
 	case MessageTypes::MESSAGE_ID_LEAVE_ROOM:
 	{
+		// store room variable
+		std::string room = conn->room;
+
 		mtx.lock();
 
-		std::vector<connection*>::iterator it =
-			std::find(rooms[m.message].begin(),
-					  rooms[m.message].end(),
-					  conn
-			);
-		if (it != rooms[m.message].end())
-			rooms[m.message].erase(it);
+		conn->room = "";
 
 		mtx.unlock();
+
+		// notify all clients that the client has left the room
+		SendMessageToClients(conn->client_name + " has left '" + room + "'", conn);
 
 		break;
 	}
 	case MessageTypes::MESSAGE_ID_SEND:
 	{
-		SendMessageToClients(m, conn);
+		m.message_length = buf.readInt32LE();
+		m.message = buf.readString(m.message_length);
+
+		SendMessageToRoom(conn->room, conn->client_name + ": " + m.message, conn);
 
 		break;
+	}
+	case MessageTypes::MESSAGE_ID_NAME:
+	{
+		m.name_length = buf.readInt32LE();
+		m.client_name = buf.readString(m.name_length);
+
+		mtx.lock();
+
+		conn->client_name = m.client_name;
+
+		mtx.unlock();
 	}
 	default:
 		break;
