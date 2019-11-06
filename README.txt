@@ -1,5 +1,5 @@
 @author		Hamza Mian, Brandon Becker
-@project	Project 1 (Network Programming) Chat Application
+@project	Project 2 (Network Programming) Chat Application
 
 Build/Run Instructions:
  - Open the solution in Visual Studio
