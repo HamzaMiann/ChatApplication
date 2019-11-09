@@ -254,6 +254,36 @@ void server::SendMessageToRoom(std::string room, std::string message, connection
 	mtx.unlock();
 }
 
+// Send a message to a specific client
+void server::SendMessageToAClient(std::string message, connection* conn)
+{
+	mtx.lock();
+
+	printf("Sending message to client at socket %d\n", (int)conn->acceptSocket);
+
+	NetworkBuffer buf(DEFAULT_BUFLEN);
+	buf.writeInt32BE(message.length());
+	buf.writeStringBE(message);
+
+	for (unsigned int i = 0; i < clients.size(); ++i)
+	{
+		if (clients[i] == conn)
+		{
+			int iSendResult = send(clients[i]->acceptSocket, buf.Data(), DEFAULT_BUFLEN, 0);
+			//int iSendResult = send(clients[i]->acceptSocket, message.message.c_str(), message.message_length, 0);
+			if (iSendResult == SOCKET_ERROR)
+			{
+				printf("send failed with error: %d\n", WSAGetLastError());
+				closesocket(clients[i]->acceptSocket);
+				WSACleanup();
+				exit(1);
+			}
+		}
+	}
+
+	mtx.unlock();
+}
+
 void server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* conn)
 {
 	network_message m;

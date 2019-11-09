@@ -58,6 +58,7 @@ public:
 
 	void SendMessageToClients(std::string message, connection* conn);
 	void SendMessageToRoom(std::string room, std::string message, connection* conn);
+	void SendMessageToAClient(std::string message, connection* conn); // Send a message to a specific client
 	void ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* conn);
 	void RemoveClient(connection* conn);
 	void AddClient(connection* conn);

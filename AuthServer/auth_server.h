@@ -55,6 +55,7 @@ public:
 	void start_listening();
 
 	void SendMessageToClients(std::string message, connection* conn);
+	//void SendMessageToAClient(std::string message, connection* conn); // Send a message to a specific client
 	void ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* conn);
 	void RemoveClient() { client = nullptr; }
 };
