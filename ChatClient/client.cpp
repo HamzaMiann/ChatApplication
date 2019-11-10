@@ -28,6 +28,9 @@ void ListenToServer(client* client)
 			std::string message = buf.readStringBE(message_length);
 			client->message_history.push_back(message);
 
+			//check if user has logged in
+		//	if (message.length())
+
 			if (client->message_history.size() > 8u)
 			{
 				client->message_history.erase(client->message_history.begin());
@@ -192,6 +195,35 @@ void client::send_message(std::string message, MessageTypes type)
 
 }
 
+void client::email_authentication(std::string email, std::string password, MessageTypes type)
+{
+	NetworkBuffer buf(DEFAULT_BUFLEN);
+	buf.writeInt32BE(0);
+
+	buf.writeInt32BE(type);
+
+	buf.writeInt32BE(email.length());
+	buf.writeStringBE(email);
+
+	buf.writeInt32BE(password.length());
+	buf.writeStringBE(password);
+
+
+	// #3 write & read
+	const char* buffer = "Hello server!";
+
+	//printf("Sending a packet to the server...\n");
+	iResult = send(connectSocket, buf.Data(), DEFAULT_BUFLEN, 0);
+	//iResult = send(connectSocket, buffer, (int)strlen(buffer), 0);
+	if (iResult == SOCKET_ERROR)
+	{
+		//printf("send() failed with error: %d\n", WSAGetLastError());
+		closesocket(connectSocket);
+		WSACleanup();
+		exit(1);
+	}
+}
+
 void client::display_to_screen()
 {
 	//clear_screen();
@@ -201,6 +233,8 @@ void client::display_to_screen()
 		system("cls");
 		printf("Use /join [RoomName] to join a room]\n");
 		printf("Use /leave [RoomName] to leave a room\n");
+		printf("Use /register to register an email\n");
+		printf("Use /authenticate to authenticate an email\n");
 		for (unsigned int i = 0; i < 8; ++i)
 		{
 			if (i < message_history.size())

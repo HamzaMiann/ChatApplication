@@ -267,10 +267,44 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 		if (db->Authenticate(web.email(), web.plaint64extpassword()))
 		{
 			// SEND YES TO SERVER
-			
+			m.message = "Authentication successful! Account created on ";
+			m.message_length = m.message.length();
+			SendMessageToClients(m.message, conn);
+		}
+		else
+		{
+			m.message = "Authentication failure!";
+			m.message_length = m.message.length();
+			SendMessageToClients(m.message, conn);
 		}
 	}
 	break;
+	case AuthMessageTypes::CreateAccountWeb:
+	{
+		m.message_length = buf.readInt32LE();
+		m.message = buf.readStringBE(m.message_length);
+
+		authentication::AuthenticateWeb web;
+		web.ParseFromString(m.message);
+
+		database* db = new database(IP, USR, PAS, SCH);
+
+		db->Connect();
+
+		if (db->CreateAccount(web.email(), web.plaint64extpassword()))
+		{
+			// SEND YES TO SERVER
+			m.message = "Account creation successful! Account created on ";
+			m.message_length = m.message.length();
+			SendMessageToClients(m.message, conn);
+		}
+		else
+		{
+			m.message = "Account creation failure!";
+			m.message_length = m.message.length();
+			SendMessageToClients(m.message, conn);
+		}
+	}
 	default:
 		break;
 	}

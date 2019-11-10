@@ -373,6 +373,72 @@ void server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* 
 
 		mtx.unlock();
 	}
+	case MessageTypes::AUTHENTICATE_EMAIL: // Check if email exists and password matches
+	{
+		INT32 emailLength = buf.readInt32LE();
+		std::string email = buf.readString(emailLength);
+
+		INT32 passwordLength = buf.readInt32LE();
+		std::string password = buf.readString(passwordLength);
+		bool alreadyLoggedIn = false;
+		for (unsigned int i = 0; i < clients.size(); ++i)
+		{
+			if (clients[i]->email == email)
+			{
+				alreadyLoggedIn = true;
+			}
+		}
+		
+
+		std::string result = "failed to reach authentication server";
+		if (alreadyLoggedIn == true)
+		{
+			result = "Authentication failure, User is already logged in!";
+			SendMessageToAClient(result, conn);
+			break;
+		}
+		//Check if email has correct password on authentication server
+		mtx.lock();
+		
+		mtx.unlock();
+
+		//If user has successfully logged in
+		if (result.length() >= 22)
+		{
+			if (result.substr(0, 22) == "Authentication success")
+			{
+				conn->email = email;
+			}
+		}
+
+		// send back result
+		m.message_length = result.length();
+		m.message = result;
+
+		SendMessageToAClient(result, conn);
+		break;
+	}
+	case MessageTypes::REGISTER_EMAIL: // Register an email
+	{
+		INT32 emailLength = buf.readInt32LE();
+		std::string email = buf.readString(emailLength);
+
+		INT32 passwordLength = buf.readInt32LE();
+		std::string password = buf.readString(passwordLength);
+
+		//Check if email has correct password on authentication server
+		mtx.lock();
+		std::string result = "failed to reach authentication server";
+
+		mtx.unlock();
+
+		// send back result
+		m.message_length = result.length();
+		m.message = result;
+
+		SendMessageToAClient(result, conn);
+		break;
+	}
 	default:
 		break;
 	}

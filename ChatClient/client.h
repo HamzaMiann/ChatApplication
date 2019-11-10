@@ -22,7 +22,9 @@ enum MessageTypes
 	MESSAGE_ID_SEND,
 	MESSAGE_ID_JOIN_ROOM,
 	MESSAGE_ID_LEAVE_ROOM,
-	MESSAGE_ID_NAME
+	MESSAGE_ID_NAME,
+	REGISTER_EMAIL,
+	AUTHENTICATE_EMAIL
 };
 
 
@@ -39,6 +41,7 @@ public:
 	std::vector<std::string> message_history;
 	std::string written_message = "";
 	bool inRoom = false;
+	bool authenticated = false;
 
 	client() {}
 	~client();
@@ -46,5 +49,6 @@ public:
 	void init();
 	void listen();
 	void send_message(std::string message, MessageTypes type);
+	void email_authentication(std::string email, std::string password, MessageTypes type);
 	void display_to_screen();
 };

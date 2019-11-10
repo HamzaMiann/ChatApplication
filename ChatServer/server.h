@@ -23,7 +23,9 @@ enum MessageTypes
 	MESSAGE_ID_SEND,
 	MESSAGE_ID_JOIN_ROOM,
 	MESSAGE_ID_LEAVE_ROOM,
-	MESSAGE_ID_NAME
+	MESSAGE_ID_NAME,
+	REGISTER_EMAIL,
+	AUTHENTICATE_EMAIL
 };
 
 struct network_message
@@ -74,4 +76,5 @@ public:
 	SOCKET acceptSocket;
 	connection(server& _server, SOCKET socket) : Server(_server), acceptSocket(socket) {}
 	inline bool isConnected() { return acceptSocket != INVALID_SOCKET; }
+	std::string email;
 };
