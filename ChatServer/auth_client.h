@@ -39,12 +39,12 @@ class auth_client
 private:
 	WSADATA wsaData;
 	int iResult;
-	std::thread* listen_thread;
-	SOCKET connectSocket = INVALID_SOCKET;
 
-	server* connected_server;
 
 public:
+	SOCKET connectSocket = INVALID_SOCKET;
+	std::thread* listen_thread;
+	server* connected_server;
 
 	auth_client(server* s) { this->connected_server = s; }
 	~auth_client();

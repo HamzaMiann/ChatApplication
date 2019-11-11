@@ -28,7 +28,7 @@ enum MessageTypes
 struct network_message
 {
 	INT32			packet_length;
-	MessageTypes	message_id;
+	INT32			message_id;
 	INT32			room_length;
 	std::string		room;
 	INT32			message_length;
@@ -63,6 +63,7 @@ public:
 	void SendMessageToRoom(std::string room, std::string message, connection* conn);
 	void SendMessageToAClient(std::string message, connection* conn); // Send a message to a specific client
 	void ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* conn);
+	void ProcessAuthMessage(char* recvbuf, unsigned int recvbuflen);
 	void RemoveClient(connection* conn);
 	void AddClient(connection* conn);
 };

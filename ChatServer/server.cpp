@@ -197,6 +197,7 @@ void server::start_listening()
 	closesocket(listenSocket);
 }
 
+
 void server::SendMessageToClients(std::string message, connection* conn)
 {
 	mtx.lock();
@@ -285,6 +286,30 @@ void server::SendMessageToAClient(std::string message, connection* conn)
 	}
 
 	mtx.unlock();
+}
+
+void server::ProcessAuthMessage(char* recvbuf, unsigned int recvbuflen)
+{
+	network_message m;
+	NetworkBuffer buf(recvbuflen, recvbuf);
+
+	m.message_id = buf.readInt32LE();
+
+	// TODO
+
+	switch (m.message_id)
+	{
+	case AuthMessageTypes::AuthenticateWebFailure:
+		break;
+	case AuthMessageTypes::AuthenticateWebSuccess:
+		break;
+	case AuthMessageTypes::CreateAccountWebSuccess:
+		break;
+	case AuthMessageTypes::CreateAccountWebFailure:
+		break;
+	default:
+		break;
+	}
 }
 
 void server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* conn)
