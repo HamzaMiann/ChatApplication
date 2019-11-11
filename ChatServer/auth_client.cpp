@@ -142,27 +142,54 @@ void auth_client::verify_email(AuthMessageTypes type, std::string email, std::st
 
 	//buf.writeInt32BE(password.length());
 	//buf.writeStringBE(password);
-
-	authentication::AuthenticateWeb web;
-
-	web.set_email(email);
-	web.set_plaint64extpassword(password);
-	web.set_requestid(clientId);
-
-	std::string message;
-	message = web.SerializeAsString();
-	buf.writeInt32BE(message.length());
-	buf.writeStringBE(message);
-
-	buf.writeInt32BE(clientId);
-	//buf.writeStringBE(password);
-
-	iResult = send(connectSocket, buf.Data(), DEFAULT_BUFLEN, 0);
-	if (iResult == SOCKET_ERROR)
+	if (type == AuthMessageTypes::AuthenticateWeb)
 	{
-		printf("send() failed with error: %d\n", WSAGetLastError());
-		closesocket(connectSocket);
-		WSACleanup();
-		exit(1);
+		authentication::AuthenticateWeb web;
+
+		web.set_email(email);
+		web.set_plaint64extpassword(password);
+		web.set_requestid(clientId);
+
+		std::string message;
+		message = web.SerializeAsString();
+		buf.writeInt32BE(message.length());
+		buf.writeStringBE(message);
+
+		buf.writeInt32BE(clientId);
+		//buf.writeStringBE(password);
+
+		iResult = send(connectSocket, buf.Data(), DEFAULT_BUFLEN, 0);
+		if (iResult == SOCKET_ERROR)
+		{
+			printf("send() failed with error: %d\n", WSAGetLastError());
+			closesocket(connectSocket);
+			WSACleanup();
+			exit(1);
+		}
+	}
+	else if (type == AuthMessageTypes::CreateAccountWeb)
+	{
+		authentication::CreateAccountWeb web;
+		web.set_email(email);
+		web.set_plaint64extpassword(password);
+		web.set_requestid(clientId);
+
+		std::string message;
+		message = web.SerializeAsString();
+		buf.writeInt32BE(message.length());
+		buf.writeStringBE(message);
+
+		buf.writeInt32BE(clientId);
+		//buf.writeStringBE(password);
+
+		iResult = send(connectSocket, buf.Data(), DEFAULT_BUFLEN, 0);
+		if (iResult == SOCKET_ERROR)
+		{
+			printf("send() failed with error: %d\n", WSAGetLastError());
+			closesocket(connectSocket);
+			WSACleanup();
+			exit(1);
+		}
+
 	}
 }

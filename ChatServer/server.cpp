@@ -262,7 +262,7 @@ void server::SendMessageToRoom(std::string room, std::string message, connection
 // Send a message to a specific client
 void server::SendMessageToAClient(std::string message, connection* conn)
 {
-	mtx.lock();
+	//mtx.lock();
 
 	printf("Sending message to client at socket %d\n", (int)conn->acceptSocket);
 
@@ -286,17 +286,18 @@ void server::SendMessageToAClient(std::string message, connection* conn)
 		}
 	}
 
-	mtx.unlock();
+	//mtx.unlock();
 }
 
 void server::ProcessAuthMessage(char* recvbuf, unsigned int recvbuflen)
 {
+	mtx.lock();
 	network_message m;
 	NetworkBuffer buf(recvbuflen, recvbuf);
-
-	m.message_id = buf.readInt32BE();
-	m.message_length = buf.readInt32BE();
-	m.message = buf.readStringBE(m.message_length);
+	m.packet_length = buf.readInt32LE();
+	m.message_id = (MessageTypes)buf.readInt32LE();
+	m.message_length = buf.readInt32LE();
+	m.message = buf.readString(m.message_length);
 
 	
 	// TODO
@@ -344,13 +345,14 @@ void server::ProcessAuthMessage(char* recvbuf, unsigned int recvbuflen)
 		unsigned int clientId = failure.requestid();
 		if (clients.size() > clientId)
 		{
-			SendMessageToAClient("Authentication failure", clients[clientId]);
+			SendMessageToAClient("Registration failure", clients[clientId]);
 		}
 	}
 		break;
 	default:
 		break;
 	}
+	mtx.unlock();
 }
 
 void server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* conn)
@@ -452,7 +454,9 @@ void server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* 
 		if (email == "")
 		{
 			result = "Authentication failure, empty email!";
+			mtx.lock();
 			SendMessageToAClient(result, conn);
+			mtx.unlock();
 			break;
 		}
 
@@ -508,18 +512,21 @@ void server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* 
 
 		INT32 passwordLength = buf.readInt32LE();
 		std::string password = buf.readString(passwordLength);
+		unsigned int clientId = 0;
 
+		for (unsigned int i = 0; i < clients.size(); ++i)
+		{
+			if (clients[i] == conn)
+			{
+				clientId = i;
+			}
+		}
 		//Check if email has correct password on authentication server
 		mtx.lock();
-		std::string result = "failed to reach authentication server";
+		//std::string result = "failed to reach authentication server";
+		auth_server->verify_email(AuthMessageTypes::CreateAccountWeb, email, password, clientId);
 
 		mtx.unlock();
-
-		// send back result
-		m.message_length = result.length();
-		m.message = result;
-
-		SendMessageToAClient(result, conn);
 		break;
 	}
 	default:
