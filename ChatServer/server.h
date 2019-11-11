@@ -2,15 +2,12 @@
 
 #define WIN32_LEAN_AND_MEAN			// Strip rarely used calls
 
-#include <Windows.h>
-#include <WinSock2.h>
-#include <WS2tcpip.h>
-#include <stdlib.h>
-#include <stdio.h>
+
 #include <vector>
 #include <string>
 #include <map>
 #include "NetworkBuffer.hpp"
+#include "auth_client.h"
 
 // Need to link with Ws2_32.lib
 #pragma comment (lib, "Ws2_32.lib")
@@ -50,9 +47,13 @@ private:
 	struct addrinfo hints;
 	struct addrinfo* addrResult = NULL;
 
+	auth_client* auth_server;
+
 	std::vector<connection*> clients;
 
 public:
+
+	server() { auth_server = new auth_client(this); }
 	~server();
 
 	void init();

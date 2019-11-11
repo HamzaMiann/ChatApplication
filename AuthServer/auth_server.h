@@ -16,14 +16,14 @@
 #pragma comment (lib, "Ws2_32.lib")
 
 #define DEFAULT_BUFLEN 512
-#define DEFAULT_PORT "5150"
+#define DEFAULT_PORT "5151"
 
 enum AuthMessageTypes
 {
 	CreateAccountWeb,
+	AuthenticateWeb,
 	CreateAccountWebSuccess,
 	CreateAccountWebFailure,
-	AuthenticateWeb,
 	AuthenticateWebSuccess,
 	AuthenticateWebFailure
 };
@@ -54,7 +54,7 @@ public:
 	void init();
 	void start_listening();
 
-	void SendMessageToClients(std::string message, connection* conn);
+	void SendMessageToClients(AuthMessageTypes type, std::string message, connection* conn);
 	//void SendMessageToAClient(std::string message, connection* conn); // Send a message to a specific client
 	void ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* conn);
 	void RemoveClient() { client = nullptr; }

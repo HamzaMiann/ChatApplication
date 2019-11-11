@@ -7,6 +7,23 @@
 #include <jdbc/cppconn/prepared_statement.h>
 #include <string>
 
+enum error_type
+{
+	NONE,
+	DB_ERROR,
+	NO_MATCH,
+	INVALID_CREDENTIALS,
+	ALREADY_EXISTS
+};
+
+
+struct UserInfo
+{
+	int user_id;
+	std::string email;
+	error_type error;
+};
+
 class database
 {
 private:
@@ -25,7 +42,7 @@ public:
 
 	bool Connect();
 
-	bool CreateAccount(std::string email, std::string hash);
-	bool Authenticate(std::string email, std::string hash);
+	UserInfo CreateAccount(std::string email, std::string hash);
+	UserInfo Authenticate(std::string email, std::string hash);
 	
 };

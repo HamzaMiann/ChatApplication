@@ -187,13 +187,14 @@ void auth_server::start_listening()
 	closesocket(listenSocket);
 }
 
-void auth_server::SendMessageToClients(std::string message, connection* conn)
+void auth_server::SendMessageToClients(AuthMessageTypes type, std::string message, connection* conn)
 {
 	mtx.lock();
 
 	printf("Sending message from %d to all clients\n", (int)conn->acceptSocket);
 
 	NetworkBuffer buf(DEFAULT_BUFLEN);
+	buf.writeInt32BE((int)type);
 	buf.writeInt32BE(message.length());
 	buf.writeStringBE(message);
 
@@ -264,18 +265,31 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 
 		db->Connect();
 
-		if (db->Authenticate(web.email(), web.plaint64extpassword()))
+		UserInfo result = db->Authenticate(web.email(), web.plaint64extpassword());
+
+		if (result.error == NONE)
 		{
 			// SEND YES TO SERVER
-			m.message = "Authentication successful! Account created on ";
-			m.message_length = m.message.length();
-			SendMessageToClients(m.message, conn);
+			authentication::AuthenticateWebSuccess success;
+			success.set_requestid(web.requestid());
+			success.set_creationdate("");
+
+			SendMessageToClients(AuthMessageTypes::CreateAccountWebSuccess,
+								 success.SerializeAsString(),
+								 conn);
+
 		}
 		else
 		{
-			m.message = "Authentication failure!";
-			m.message_length = m.message.length();
-			SendMessageToClients(m.message, conn);
+			// SEND NO TO SERVER
+			authentication::AuthenticateWebFailure failure;
+			failure.set_requestid(web.requestid());
+
+			// TODO: figure out a way to set the "reason" enum in "failure"
+			
+			SendMessageToClients(AuthMessageTypes::AuthenticateWebFailure,
+								 failure.SerializeAsString(),
+								 conn);
 		}
 	}
 	break;
@@ -291,18 +305,31 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 
 		db->Connect();
 
-		if (db->CreateAccount(web.email(), web.plaint64extpassword()))
+		UserInfo result = db->CreateAccount(web.email(), web.plaint64extpassword());
+
+		if (result.error == NONE)
 		{
 			// SEND YES TO SERVER
-			m.message = "Account creation successful! Account created on ";
-			m.message_length = m.message.length();
-			SendMessageToClients(m.message, conn);
+			authentication::CreateAccountWebSuccess success;
+			success.set_requestid(web.requestid());
+			success.set_userid(result.user_id);
+
+			SendMessageToClients(AuthMessageTypes::CreateAccountWebSuccess,
+								 success.SerializeAsString(),
+								 conn);
+
 		}
 		else
 		{
-			m.message = "Account creation failure!";
-			m.message_length = m.message.length();
-			SendMessageToClients(m.message, conn);
+			authentication::CreateAccountWebFailure failure;
+			failure.set_requestid(web.requestid());
+			
+			// TODO: figure out a way to set the "reason" enum in "failure"
+
+			SendMessageToClients(AuthMessageTypes::CreateAccountWebFailure,
+								 failure.SerializeAsString(),
+								 conn);
+
 		}
 	}
 	default:

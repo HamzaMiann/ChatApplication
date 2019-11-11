@@ -69,6 +69,9 @@ server::~server()
 
 void server::init()
 {
+	auth_server->init();
+	auth_server->listen();
+
 	WSADATA wsaData;
 
 	// Initialize Winsock
