@@ -194,7 +194,7 @@ void auth_server::SendMessageToClients(AuthMessageTypes type, std::string messag
 	printf("Sending message from %d to all clients\n", (int)conn->acceptSocket);
 
 	NetworkBuffer buf(DEFAULT_BUFLEN);
-	buf.writeInt32BE((int)type);
+	buf.writeInt32BE(type);
 	buf.writeInt32BE(message.length());
 	buf.writeStringBE(message);
 
@@ -259,7 +259,9 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 		m.message = buf.readStringBE(m.message_length);
 
 		authentication::AuthenticateWeb web;
+		
 		web.ParseFromString(m.message);
+		printf("Authenticating email '%s' ...\n", web.email().c_str());
 
 		database* db = new database(IP, USR, PAS, SCH);
 
@@ -269,6 +271,7 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 
 		if (result.error == NONE)
 		{
+			printf("Authentication success!\n");
 			// SEND YES TO SERVER
 			authentication::AuthenticateWebSuccess success;
 			success.set_requestid(web.requestid());
@@ -281,6 +284,7 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 		}
 		else
 		{
+			printf("Authentication failed!\n");
 			// SEND NO TO SERVER
 			authentication::AuthenticateWebFailure failure;
 			failure.set_requestid(web.requestid());
@@ -302,6 +306,7 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 		web.ParseFromString(m.message);
 
 		database* db = new database(IP, USR, PAS, SCH);
+		printf("Authenticating email '%s' ...\n", web.email().c_str());
 
 		db->Connect();
 
@@ -309,6 +314,7 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 
 		if (result.error == NONE)
 		{
+			printf("Authentication success!\n");
 			// SEND YES TO SERVER
 			authentication::CreateAccountWebSuccess success;
 			success.set_requestid(web.requestid());
@@ -321,6 +327,7 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 		}
 		else
 		{
+			printf("Authentication failed!\n");
 			authentication::CreateAccountWebFailure failure;
 			failure.set_requestid(web.requestid());
 			

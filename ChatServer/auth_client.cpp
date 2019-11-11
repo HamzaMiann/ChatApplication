@@ -1,5 +1,6 @@
 #include "auth_client.h"
 #include "server.h"
+#include <protobuf/AuthenticationProtocol.pb.h>
 
 #define DEFAULT_AUTH_BUFLEN 512
 #define DEFAULT_AUTH_PORT "5151"
@@ -128,4 +129,40 @@ void auth_client::listen()
 void auth_client::send_message(AuthMessageTypes type, std::string message)
 {
 	// TODO
+}
+
+void auth_client::verify_email(AuthMessageTypes type, std::string email, std::string password, unsigned int clientId)
+{
+	NetworkBuffer buf(DEFAULT_BUFLEN);
+	buf.writeInt32BE(0);
+	buf.writeInt32BE(type);
+
+	//buf.writeInt32BE(email.length());
+	//buf.writeStringBE(email);
+
+	//buf.writeInt32BE(password.length());
+	//buf.writeStringBE(password);
+
+	authentication::AuthenticateWeb web;
+
+	web.set_email(email);
+	web.set_plaint64extpassword(password);
+	web.set_requestid(clientId);
+
+	std::string message;
+	message = web.SerializeAsString();
+	buf.writeInt32BE(message.length());
+	buf.writeStringBE(message);
+
+	buf.writeInt32BE(clientId);
+	//buf.writeStringBE(password);
+
+	iResult = send(connectSocket, buf.Data(), DEFAULT_BUFLEN, 0);
+	if (iResult == SOCKET_ERROR)
+	{
+		printf("send() failed with error: %d\n", WSAGetLastError());
+		closesocket(connectSocket);
+		WSACleanup();
+		exit(1);
+	}
 }

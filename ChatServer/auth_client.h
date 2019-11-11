@@ -52,4 +52,5 @@ public:
 	void init();
 	void listen();
 	void send_message(AuthMessageTypes type, std::string message);
+	void verify_email(AuthMessageTypes type, std::string email, std::string password, unsigned int clientId);
 };

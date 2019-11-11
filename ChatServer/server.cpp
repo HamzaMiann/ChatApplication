@@ -3,6 +3,7 @@
 #include <mutex>
 #include <thread>
 #include <algorithm>
+#include <protobuf/AuthenticationProtocol.pb.h>
 
 std::mutex mtx;
 
@@ -293,19 +294,59 @@ void server::ProcessAuthMessage(char* recvbuf, unsigned int recvbuflen)
 	network_message m;
 	NetworkBuffer buf(recvbuflen, recvbuf);
 
-	m.message_id = buf.readInt32LE();
+	m.message_id = buf.readInt32BE();
+	m.message_length = buf.readInt32BE();
+	m.message = buf.readStringBE(m.message_length);
 
+	
 	// TODO
 
 	switch (m.message_id)
 	{
 	case AuthMessageTypes::AuthenticateWebFailure:
+	{
+		authentication::AuthenticateWebFailure failure;
+		failure.ParseFromString(m.message);
+		unsigned int clientId = failure.requestid();
+		if (clients.size() > clientId)
+		{
+			SendMessageToAClient("Authentication failure", clients[clientId]);
+		}
+	}
 		break;
 	case AuthMessageTypes::AuthenticateWebSuccess:
+	{
+		authentication::AuthenticateWebSuccess success;
+		success.ParseFromString(m.message);
+		unsigned int clientId = success.requestid();
+		if (clients.size() > clientId)
+		{
+			SendMessageToAClient("Authentication success! Account created on " + success.creationdate(), clients[clientId]);
+		}
+		
+	}
 		break;
 	case AuthMessageTypes::CreateAccountWebSuccess:
+	{
+		authentication::CreateAccountWebSuccess success;
+		success.ParseFromString(m.message);
+		unsigned int clientId = success.requestid();
+		if (clients.size() > clientId)
+		{
+			SendMessageToAClient("Registration success!", clients[clientId]);
+		}
+	}
 		break;
 	case AuthMessageTypes::CreateAccountWebFailure:
+	{
+		authentication::CreateAccountWebFailure failure;
+		failure.ParseFromString(m.message);
+		unsigned int clientId = failure.requestid();
+		if (clients.size() > clientId)
+		{
+			SendMessageToAClient("Authentication failure", clients[clientId]);
+		}
+	}
 		break;
 	default:
 		break;
@@ -400,50 +441,64 @@ void server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connection* 
 		conn->client_name = m.client_name;
 
 		mtx.unlock();
+		break;
 	}
 	case MessageTypes::AUTHENTICATE_EMAIL: // Check if email exists and password matches
 	{
+		std::string result = "failed to reach authentication server";
 		INT32 emailLength = buf.readInt32LE();
 		std::string email = buf.readString(emailLength);
+
+		if (email == "")
+		{
+			result = "Authentication failure, empty email!";
+			SendMessageToAClient(result, conn);
+			break;
+		}
 
 		INT32 passwordLength = buf.readInt32LE();
 		std::string password = buf.readString(passwordLength);
 		bool alreadyLoggedIn = false;
+		unsigned int clientId = 0;
 		for (unsigned int i = 0; i < clients.size(); ++i)
 		{
 			if (clients[i]->email == email)
 			{
 				alreadyLoggedIn = true;
 			}
+			if (clients[i] == conn)
+			{
+				clientId = i;
+			}
 		}
-		
 
-		std::string result = "failed to reach authentication server";
 		if (alreadyLoggedIn == true)
 		{
 			result = "Authentication failure, User is already logged in!";
 			SendMessageToAClient(result, conn);
 			break;
 		}
+
+		printf("Authenticating email '%s' ...\n", email.c_str());
 		//Check if email has correct password on authentication server
 		mtx.lock();
-		
+		auth_server->verify_email(AuthMessageTypes::AuthenticateWeb, email, password, clientId);
 		mtx.unlock();
 
 		//If user has successfully logged in
-		if (result.length() >= 22)
-		{
-			if (result.substr(0, 22) == "Authentication success")
-			{
-				conn->email = email;
-			}
-		}
+		//if (result.length() >= 22)
+		//{
+		//	if (result.substr(0, 22) == "Authentication success")
+		//	{
+		//		conn->email = email;
+		//	}
+		//}
 
-		// send back result
-		m.message_length = result.length();
-		m.message = result;
+		//// send back result
+		//m.message_length = result.length();
+		//m.message = result;
 
-		SendMessageToAClient(result, conn);
+		//SendMessageToAClient(result, conn);
 		break;
 	}
 	case MessageTypes::REGISTER_EMAIL: // Register an email
