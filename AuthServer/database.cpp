@@ -1,5 +1,6 @@
 
 #include "database.h"
+#include "bcrypt/BCrypt.hpp"
 
 database::database(std::string ip, std::string schema, std::string username, std::string password)
 {
@@ -27,7 +28,7 @@ bool database::Connect()
 	return this->isConnected;
 }
 
-UserInfo database::CreateAccount(std::string email, std::string hash)
+UserInfo database::CreateAccount(std::string email, std::string pass)
 {
 	UserInfo info;
 	info.error = NONE;
@@ -41,7 +42,7 @@ UserInfo database::CreateAccount(std::string email, std::string hash)
 		}
 
 		sql::PreparedStatement* pstmt = con->prepareStatement(
-			"select * from web_auth where email = '" + username + "'"
+			"select * from web_auth where email = '" + email + "'"
 		);
 
 		sql::ResultSet* res = pstmt->executeQuery();
@@ -56,21 +57,22 @@ UserInfo database::CreateAccount(std::string email, std::string hash)
 			"insert into user (last_login, creation_date) values (curdate(), curdate())"
 		);
 
-		if (pstmt->execute() == 0)
+		if (pstmt->executeUpdate() == 0)
 		{
 			info.error = DB_ERROR;
 			return info;
 		}
 
+		pstmt->close();
 
 		pstmt = con->prepareStatement(
 			"insert into web_auth (email, salt, hashed_password, userId) values (?, ?, ?, (select max(id) from user))"
 		);
 
-		pstmt->setString(1, username);
+		pstmt->setString(1, email);
 		pstmt->setString(2, "salty_gamer");
-		pstmt->setString(3, hash);
-		if (pstmt->execute() == 0)
+		pstmt->setString(3, pass);
+		if (pstmt->executeUpdate() == 0)
 		{
 			info.error = DB_ERROR;
 			return info;
@@ -102,7 +104,7 @@ UserInfo database::CreateAccount(std::string email, std::string hash)
 	return info;
 }
 
-UserInfo database::Authenticate(std::string email, std::string hash)
+UserInfo database::Authenticate(std::string email, std::string pass)
 {
 	UserInfo info;
 	info.error = NONE;
@@ -128,7 +130,7 @@ UserInfo database::Authenticate(std::string email, std::string hash)
 			res->next();
 
 			std::string salt = res->getString(1);
-			std::string pass = res->getString(2);
+			std::string hash = res->getString(2);
 			int userid = res->getInt(3);
 
 			if (salt != "salty_gamer" || pass != hash)

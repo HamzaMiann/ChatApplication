@@ -28,13 +28,17 @@ void ListenToServer(auth_client* client)
 	else if (iResult == 0)
 	{
 		printf("Connection closed\n");
+		delete client;
+		printf("\nLost connection to auth server...\n");
+		exit(1);
 	}
 	else
 	{
 		printf("recv failed with error: %d\n", WSAGetLastError());
+		delete client;
+		printf("\nLost connection to auth server...\n");
+		exit(1);
 	}
-	printf("\nLost connection to auth server...\n");
-	exit(1);
 }
 
 auth_client::~auth_client()
@@ -137,11 +141,7 @@ void auth_client::verify_email(AuthMessageTypes type, std::string email, std::st
 	buf.writeInt32BE(0);
 	buf.writeInt32BE(type);
 
-	//buf.writeInt32BE(email.length());
-	//buf.writeStringBE(email);
 
-	//buf.writeInt32BE(password.length());
-	//buf.writeStringBE(password);
 	if (type == AuthMessageTypes::AuthenticateWeb)
 	{
 		authentication::AuthenticateWeb web;

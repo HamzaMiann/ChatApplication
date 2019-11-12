@@ -264,7 +264,7 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 		web.ParseFromString(m.message);
 		printf("Authenticating email '%s' ...\n", web.email().c_str());
 
-		database* db = new database(IP, USR, PAS, SCH);
+		database* db = new database(IP, SCH, USR, PAS);
 
 		db->Connect();
 
@@ -306,7 +306,8 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 		authentication::AuthenticateWeb web;
 		web.ParseFromString(m.message);
 
-		database* db = new database(IP, USR, PAS, SCH);
+		database* db = new database(IP, SCH, USR, PAS);
+
 		printf("Creating email '%s' ...\n", web.email().c_str());
 
 		db->Connect();

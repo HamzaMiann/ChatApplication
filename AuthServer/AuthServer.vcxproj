@@ -98,7 +98,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>mysqlcppconn.lib;mysqlcppconn8.lib;libprotocd.lib;libprotobuf-lited.lib;libprotobufd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>bcrypt.lib;mysqlcppconn.lib;mysqlcppconn8.lib;libprotocd.lib;libprotobuf-lited.lib;libprotobufd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /y "$(SolutionDir)dependencies\DLL\$(Configuration)\mysqlcppconn-7-vs14.dll" "$(OutDir)"</Command>
@@ -133,7 +133,7 @@
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>mysqlcppconn.lib;mysqlcppconn8.lib;libprotoc.lib;libprotobuf-lite.lib;libprotobuf.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>bcrypt.lib;mysqlcppconn.lib;mysqlcppconn8.lib;libprotoc.lib;libprotobuf-lite.lib;libprotobuf.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /y "$(SolutionDir)dependencies\DLL\$(Configuration)\mysqlcppconn-7-vs14.dll" "$(OutDir)"</Command>

@@ -42,7 +42,7 @@ public:
 
 	bool Connect();
 
-	UserInfo CreateAccount(std::string email, std::string hash);
-	UserInfo Authenticate(std::string email, std::string hash);
+	UserInfo CreateAccount(std::string email, std::string pass);
+	UserInfo Authenticate(std::string email, std::string pass);
 	
 };
