@@ -71,7 +71,7 @@ UserInfo database::CreateAccount(std::string email, std::string pass)
 
 		pstmt->setString(1, email);
 		pstmt->setString(2, "salty_gamer");
-		pstmt->setString(3, pass);
+		pstmt->setString(3, BCrypt::generateHash(pass));
 		if (pstmt->executeUpdate() == 0)
 		{
 			info.error = DB_ERROR;
@@ -135,7 +135,7 @@ UserInfo database::Authenticate(std::string email, std::string pass)
 			int userid = res->getInt(3);
 			std::string creation = res->getString(4);
 
-			if (salt != "salty_gamer" || pass != hash)
+			if (salt != "salty_gamer" || !BCrypt::validatePassword(pass, hash))
 			{
 				info.error = NO_MATCH;
 			}
