@@ -5,12 +5,13 @@ package authentication;
 message CreateAccountWeb {
 	required int64 requestId = 1;
 	required string email = 2;
-	required string plaint64extPassword = 3;
+	required string plaintextPassword = 3;
 }
 
 message CreateAccountWebSuccess {
 	required int64 requestId = 1;
 	required int64 userId = 2;
+	required string creation_date = 3;
 }
 
 
@@ -21,12 +22,13 @@ message CreateAccountWebFailure {
 		INVALID_PASSWORD = 1;
 		INTERNAL_SERVER_ERROR = 2;
 	}
+	required reason error = 2;
 }
 
 message AuthenticateWeb {
 	required int64 requestId = 1;
 	required string email = 2;
-	required string plaint64extPassword = 3;
+	required string plaintextPassword = 3;
 }
 
 message AuthenticateWebSuccess {
@@ -43,5 +45,5 @@ message AuthenticateWebFailure {
 		INVALID_CREDENTIALS = 1;
 		INTERNAL_SERVER_ERROR = 2;
 	}
-	
+	required reason error = 2;
 }

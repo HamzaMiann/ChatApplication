@@ -26,12 +26,6 @@ void HandleAccept(connection* conn)
 			printf("Bytes received: %d\n", iResult);
 
 			conn->Server.ProcessMessage(recvbuf, recvbuflen, conn);
-			/*network_message nm;
-			NetworkBuffer buf(DEFAULT_BUFLEN, recvbuf);
-			nm.message_length = buf.readInt32LE();
-			nm.message = buf.readStringBE(nm.message_length);
-
-			conn->Server.SendMessageToClients(nm.message, conn);*/
 
 		}
 		else if (iResult < 0)
@@ -311,7 +305,11 @@ void server::ProcessAuthMessage(char* recvbuf, unsigned int recvbuflen)
 		unsigned int clientId = failure.requestid();
 		if (clients.size() > clientId)
 		{
-			SendMessageToAClient("Authentication failure", clients[clientId]);
+			if (failure.error() == authentication::AuthenticateWebFailure_reason::AuthenticateWebFailure_reason_INVALID_CREDENTIALS)
+				SendMessageToAClient("Authentication failure. Invalid credentials.", clients[clientId]);
+			else
+				SendMessageToAClient("Authentication failure. There was an error in the authentication server.", clients[clientId]);
+
 		}
 	}
 		break;
@@ -334,7 +332,7 @@ void server::ProcessAuthMessage(char* recvbuf, unsigned int recvbuflen)
 		unsigned int clientId = success.requestid();
 		if (clients.size() > clientId)
 		{
-			SendMessageToAClient("Registration success!", clients[clientId]);
+			SendMessageToAClient("Registration success! Account created on: " + success.creation_date(), clients[clientId]);
 		}
 	}
 		break;
@@ -345,7 +343,11 @@ void server::ProcessAuthMessage(char* recvbuf, unsigned int recvbuflen)
 		unsigned int clientId = failure.requestid();
 		if (clients.size() > clientId)
 		{
-			SendMessageToAClient("Registration failure", clients[clientId]);
+			if (failure.error() == authentication::CreateAccountWebFailure_reason::CreateAccountWebFailure_reason_ACCOUNT_ALREADY_EXISTS)
+				SendMessageToAClient("Registration failure. Account already exists.", clients[clientId]);
+			else
+				SendMessageToAClient("Registration failure. There was an error in the database.", clients[clientId]);
+
 		}
 	}
 		break;

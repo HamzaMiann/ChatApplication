@@ -147,7 +147,7 @@ void auth_client::verify_email(AuthMessageTypes type, std::string email, std::st
 		authentication::AuthenticateWeb web;
 
 		web.set_email(email);
-		web.set_plaint64extpassword(password);
+		web.set_plaintextpassword(password);
 		web.set_requestid(clientId);
 
 		std::string message;
@@ -171,7 +171,7 @@ void auth_client::verify_email(AuthMessageTypes type, std::string email, std::st
 	{
 		authentication::CreateAccountWeb web;
 		web.set_email(email);
-		web.set_plaint64extpassword(password);
+		web.set_plaintextpassword(password);
 		web.set_requestid(clientId);
 
 		std::string message;

@@ -48,6 +48,7 @@ void HandleAccept(connection* conn)
 		else // iResult == 0
 		{
 			printf("Connection %d closing...\n", (int)conn->acceptSocket);
+			break;
 		}
 	} while (iResult > 0);
 	conn->server.RemoveClient();
@@ -268,7 +269,7 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 
 		db->Connect();
 
-		UserInfo result = db->Authenticate(web.email(), web.plaint64extpassword());
+		UserInfo result = db->Authenticate(web.email(), web.plaintextpassword());
 
 		if (result.error == NONE)
 		{
@@ -276,9 +277,10 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 			// SEND YES TO SERVER
 			authentication::AuthenticateWebSuccess success;
 			success.set_requestid(web.requestid());
-			success.set_creationdate("");
+			success.set_creationdate(result.creation_date);
+			success.set_userid(result.user_id);
 
-			SendMessageToClients(AuthMessageTypes::CreateAccountWebSuccess,
+			SendMessageToClients(AuthMessageTypes::AuthenticateWebSuccess,
 								 success.SerializeAsString(),
 								 conn);
 
@@ -290,8 +292,16 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 			authentication::AuthenticateWebFailure failure;
 			failure.set_requestid(web.requestid());
 
-			// TODO: figure out a way to set the "reason" enum in "failure"
-			
+			if (result.error == DB_ERROR)
+			{
+				failure.set_error(authentication::AuthenticateWebFailure_reason::AuthenticateWebFailure_reason_INTERNAL_SERVER_ERROR);
+			}
+			else
+			{
+				failure.set_error(authentication::AuthenticateWebFailure_reason::AuthenticateWebFailure_reason_INVALID_CREDENTIALS);
+			}
+
+
 			SendMessageToClients(AuthMessageTypes::AuthenticateWebFailure,
 								 failure.SerializeAsString(),
 								 conn);
@@ -312,7 +322,7 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 
 		db->Connect();
 
-		UserInfo result = db->CreateAccount(web.email(), web.plaint64extpassword());
+		UserInfo result = db->CreateAccount(web.email(), web.plaintextpassword());
 
 		if (result.error == NONE)
 		{
@@ -321,6 +331,7 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 			authentication::CreateAccountWebSuccess success;
 			success.set_requestid(web.requestid());
 			success.set_userid(result.user_id);
+			success.set_creation_date(result.creation_date);
 
 			SendMessageToClients(AuthMessageTypes::CreateAccountWebSuccess,
 								 success.SerializeAsString(),
@@ -333,9 +344,16 @@ void auth_server::ProcessMessage(char* recvbuf, unsigned int recvbuflen, connect
 			printf(std::to_string((int)result.error).c_str());
 			authentication::CreateAccountWebFailure failure;
 			failure.set_requestid(web.requestid());
-			
-			// TODO: figure out a way to set the "reason" enum in "failure"
 
+			if (result.error == error_type::DB_ERROR)
+			{
+				failure.set_error(authentication::CreateAccountWebFailure_reason::CreateAccountWebFailure_reason_INTERNAL_SERVER_ERROR);
+			}
+			else
+			{
+				failure.set_error(authentication::CreateAccountWebFailure_reason::CreateAccountWebFailure_reason_ACCOUNT_ALREADY_EXISTS);
+			}
+			
 			SendMessageToClients(AuthMessageTypes::CreateAccountWebFailure,
 								 failure.SerializeAsString(),
 								 conn);

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include "client.h"
+#include "GlobalMutex.h"
 
 #define ESCAPE 27
 #define RETURN 13
@@ -16,7 +17,7 @@ std::string getNewRoom()
 	return result;
 }
 
-void registerEmail()
+void registerEmail(std::string command)
 {
 
 
@@ -127,6 +128,8 @@ int main(int argc, char** argv)
 				{
 					if (c->written_message.substr(0, 9) == "/register")	//If the user wants to register an email
 					{
+						global_mutex::Instance()->Lock();
+
 						system("cls");
 						std::string email;
 						std::string password;
@@ -135,6 +138,8 @@ int main(int argc, char** argv)
 						std::cout << "\n Enter the password for your account: ";
 						std::cin >> password;
 
+						global_mutex::Instance()->Unlock();
+
 						c->email_authentication(email, password, REGISTER_EMAIL);
 					}
 				}
@@ -142,6 +147,8 @@ int main(int argc, char** argv)
 				{
 					if (c->written_message.substr(0, 13) == "/authenticate")
 					{
+						global_mutex::Instance()->Lock();
+
 						system("cls");
 						std::string email;
 						std::string password;
@@ -149,6 +156,8 @@ int main(int argc, char** argv)
 						std::cin >> email;
 						std::cout << "\n Enter the password for your account: ";
 						std::cin >> password;
+
+						global_mutex::Instance()->Unlock();
 
 						c->email_authentication(email, password, AUTHENTICATE_EMAIL);
 					}

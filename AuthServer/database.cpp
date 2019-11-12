@@ -54,7 +54,7 @@ UserInfo database::CreateAccount(std::string email, std::string pass)
 		}
 
 		pstmt = con->prepareStatement(
-			"insert into user (last_login, creation_date) values (curdate(), curdate())"
+			"insert into user (last_login, creation_date) values (now(), now())"
 		);
 
 		if (pstmt->executeUpdate() == 0)
@@ -78,7 +78,7 @@ UserInfo database::CreateAccount(std::string email, std::string pass)
 			return info;
 		}
 
-		pstmt = con->prepareStatement("select max(id) from user");
+		pstmt = con->prepareStatement("select id, creation_date from user where id = (select max(id) from user)");
 		res = pstmt->executeQuery();
 		if (res->rowsCount() == 0)
 		{
@@ -88,6 +88,7 @@ UserInfo database::CreateAccount(std::string email, std::string pass)
 
 		res->next();
 		info.user_id = res->getInt(1);
+		info.creation_date = res->getString(2);
 
 		res->close();
 		pstmt->close();
@@ -118,7 +119,7 @@ UserInfo database::Authenticate(std::string email, std::string pass)
 		}
 
 		sql::PreparedStatement* pstmt = con->prepareStatement(
-			"select salt, hashed_password, userid, email from web_auth where email = ?"
+			"select web_auth.salt, web_auth.hashed_password, web_auth.userid, user.creation_date from web_auth inner join user on web_auth.userid = user.id where web_auth.email = ? "
 		);
 
 		pstmt->setString(1, email);
@@ -132,6 +133,7 @@ UserInfo database::Authenticate(std::string email, std::string pass)
 			std::string salt = res->getString(1);
 			std::string hash = res->getString(2);
 			int userid = res->getInt(3);
+			std::string creation = res->getString(4);
 
 			if (salt != "salty_gamer" || pass != hash)
 			{
@@ -141,6 +143,7 @@ UserInfo database::Authenticate(std::string email, std::string pass)
 			{
 				info.email = email;
 				info.user_id = userid;
+				info.creation_date = creation;
 			}
 
 		}

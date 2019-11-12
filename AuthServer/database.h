@@ -21,6 +21,7 @@ struct UserInfo
 {
 	int user_id;
 	std::string email;
+	std::string creation_date;
 	error_type error;
 };
 

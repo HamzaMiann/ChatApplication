@@ -1,8 +1,6 @@
 #include "client.h"
 #include "console.h"
-#include <mutex>
-
-std::mutex mtx;
+#include "GlobalMutex.h"
 
 
 void ListenToServer(client* client)
@@ -22,7 +20,7 @@ void ListenToServer(client* client)
 		iResult = recv(client->connectSocket, recvbuf, recvbuflen, 0);
 		if (iResult > 0)
 		{
-			printf("Bytes received: %d\n", iResult);
+			//printf("Bytes received: %d\n", iResult);
 			NetworkBuffer buf(DEFAULT_BUFLEN, recvbuf);
 			int message_length = buf.readInt32LE();
 			std::string message = buf.readStringBE(message_length);
@@ -229,7 +227,7 @@ void client::display_to_screen()
 	//clear_screen();
 	if (inRoom == true)
 	{
-		mtx.lock();
+		global_mutex::Instance()->Lock();
 		system("cls");
 		printf("Use /join [RoomName] to join a room]\n");
 		printf("Use /leave [RoomName] to leave a room\n");
@@ -247,6 +245,7 @@ void client::display_to_screen()
 			}
 		}
 		printf("%s", written_message.c_str());
-		mtx.unlock();
+		global_mutex::Instance()->Unlock();
+
 	}
 }

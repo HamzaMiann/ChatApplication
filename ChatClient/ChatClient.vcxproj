@@ -131,6 +131,7 @@
   <ItemGroup>
     <ClInclude Include="client.h" />
     <ClInclude Include="console.h" />
+    <ClInclude Include="GlobalMutex.h" />
     <ClInclude Include="NetworkBuffer.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
