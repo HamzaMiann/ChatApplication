@@ -144,6 +144,10 @@ UserInfo database::Authenticate(std::string email, std::string pass)
 				info.email = email;
 				info.user_id = userid;
 				info.creation_date = creation;
+
+				pstmt = con->prepareStatement("update user set last_login = now() where id = ?");
+				pstmt->setInt(1, userid);
+				pstmt->executeUpdate();
 			}
 
 		}
